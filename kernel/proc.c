@@ -654,3 +654,36 @@ procdump(void)
     printf("\n");
   }
 }
+
+int
+ps()
+{
+  static char *states[] = {
+  [UNUSED]    "UNUSED  ",
+  [SLEEPING]  "SLEEPING",
+  [RUNNABLE]  "RUNNABLE",
+  [RUNNING]   "RUNNING ",
+  [ZOMBIE]    "ZOMBIE  "
+  };
+  struct proc *p;
+  char *state;
+
+  // Avoid deadlock by ensuring that devices can interrupt.
+  intr_on();
+  
+  printf("NAME \t PID \t STATE \t\t MEMORY \n");
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->state == UNUSED){
+      release(&p->lock);
+      continue;
+    } if(p->state >= 0 && p->state < NELEM(states) && states[p->state]){
+      state = states[p->state];
+    } else{
+      state = "???";
+    }
+    printf("%s \t %d \t %s \t %d \n", p->name, p->pid, state, p->sz);
+    release(&p->lock);
+  }
+  return 22;
+}
